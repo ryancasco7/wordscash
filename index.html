@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WordsCash</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--gold:#F5C518;--gold-dark:#C49A10;--green:#1DB954;--bg:#0A0A0F;--surface:#13131A;--surface2:#1C1C28;--surface3:#252535;--border:#2A2A3E;--text:#F0EDE8;--muted:#888;--danger:#E24B4A;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+  #app{max-width:680px;margin:0 auto;padding:1rem}
+  .logo{text-align:center;padding:1.5rem 0 1rem}
+  .logo h1{font-family:'Syne',sans-serif;font-size:2.6rem;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#F5C518 0%,#F0EDE8 60%,#1DB954 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .logo p{color:var(--muted);font-size:.85rem;letter-spacing:2px;text-transform:uppercase;margin-top:.25rem;font-family:'DM Mono',monospace}
+  .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center}
+  .stat-val{font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:500;color:var(--gold)}
+  .stat-val.green{color:var(--green)}
+  .stat-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+  .game-board{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem}
+  .board-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+  .round-badge{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--muted);background:var(--surface2);padding:.3rem .75rem;border-radius:20px;border:1px solid var(--border)}
+  .timer{font-family:'DM Mono',monospace;font-size:1.1rem;color:var(--gold);background:var(--surface2);padding:.3rem .75rem;border-radius:20px;border:1px solid var(--border)}
+  .timer.urgent{color:var(--danger);animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .letters-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:1rem}
+  .letter-tile{width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:2px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;cursor:pointer;position:relative;transition:all .15s;user-select:none;}
+  .letter-tile:hover{border-color:var(--gold);background:var(--surface3);transform:translateY(-2px)}
+  .letter-tile.selected{border-color:var(--gold);background:#2A2200;color:var(--gold)}
+  .tile-pts{position:absolute;bottom:2px;right:4px;font-size:.55rem;font-family:'DM Mono',monospace;color:var(--muted)}
+  .word-display{display:flex;align-items:center;justify-content:center;gap:6px;min-height:60px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.75rem;margin-bottom:1rem;flex-wrap:wrap;}
+  .word-letter{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface3);border:1.5px solid var(--gold);border-radius:8px;font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--gold);animation:pop .1s ease;}
+  @keyframes pop{0%{transform:scale(.8)}100%{transform:scale(1)}}
+  .word-placeholder{color:var(--muted);font-size:.85rem;font-family:'DM Mono',monospace;letter-spacing:2px}
+  .actions{display:flex;gap:8px;margin-bottom:1rem}
+  .btn{flex:1;padding:.75rem;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;transition:all .15s}
+  .btn-primary{background:var(--gold);color:#000}
+  .btn-primary:hover{background:var(--gold-dark)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .btn-danger{background:transparent;color:var(--muted);border:1px solid var(--border)}
+  .btn-danger:hover{color:var(--danger);border-color:var(--danger)}
+  .feedback{text-align:center;padding:.6rem 1rem;border-radius:8px;font-size:.9rem;font-family:'DM Mono',monospace;margin-bottom:.75rem;min-height:38px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .feedback.success{background:#0D2D1A;border:1px solid var(--green);color:var(--green)}
+  .feedback.error{background:#2D0D0D;border:1px solid var(--danger);color:var(--danger)}
+  .feedback.info{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+  .words-list{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:1rem}
+  .words-list h3{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:.75rem;font-family:'DM Mono',monospace}
+  .words-found{display:flex;flex-wrap:wrap;gap:6px;min-height:32px}
+  .word-chip{padding:.25rem .75rem;border-radius:20px;font-size:.8rem;font-family:'DM Mono',monospace;border:1px solid;display:flex;align-items:center;gap:6px;}
+  .word-chip.bonus{background:#0D2D1A;border-color:#1DB954;color:#1DB954}
+  .word-chip.normal{background:#1A1A00;border-color:#888;color:var(--muted)}
+  .leaderboard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:1rem}
+  .leaderboard h3{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:.75rem;font-family:'DM Mono',monospace}
+  .lb-row{display:flex;align-items:center;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--border)}
+  .lb-row:last-child{border-bottom:none}
+  .lb-rank{font-family:'DM Mono',monospace;font-size:.8rem;color:var(--muted);width:24px}
+  .lb-name{flex:1;font-size:.9rem}
+  .lb-score{font-family:'DM Mono',monospace;font-size:.9rem;color:var(--gold)}
+  .lb-cash{font-family:'DM Mono',monospace;font-size:.8rem;color:var(--green)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:100;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;max-width:360px;width:90%;text-align:center;}
+  .modal h2{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;margin-bottom:.5rem}
+  .modal p{color:var(--muted);margin-bottom:1.5rem;font-size:.9rem}
+  .modal-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.5rem}
+  .modal input{width:100%;padding:.75rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:1rem;margin-bottom:.75rem;outline:none;}
+  .modal input:focus{border-color:var(--gold)}
+  .loading-dots{display:inline-flex;gap:4px}
+  .loading-dots span{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.2s infinite}
+  .loading-dots span:nth-child(2){animation-delay:.2s}
+  .loading-dots span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+  .shuffle-btn{background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:.75rem;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;border-radius:6px;transition:color .15s}
+  .shuffle-btn:hover{color:var(--gold)}
+  .multiplier-badge{display:inline-block;background:#1A0D00;border:1px solid var(--gold);color:var(--gold);font-family:'DM Mono',monospace;font-size:.7rem;padding:.15rem .5rem;border-radius:4px;margin-left:4px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="logo">
+    <h1>WordsCash</h1>
+    <p>spell words · earn cash</p>
+  </div>
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-val" id="stat-cash">$0.00</div><div class="stat-label">Cash</div></div>
+    <div class="stat"><div class="stat-val" id="stat-score">0</div><div class="stat-label">Points</div></div>
+    <div class="stat"><div class="stat-val green" id="stat-words">0</div><div class="stat-label">Words</div></div>
+  </div>
+  <div class="game-board">
+    <div class="board-header">
+      <div class="round-badge">Round <span id="round-num">1</span> of 5</div>
+      <button class="shuffle-btn" onclick="shuffleLetters()">⟳ Shuffle</button>
+      <div class="timer" id="timer">2:00</div>
+    </div>
+    <div class="letters-grid" id="letters-grid"></div>
+    <div class="word-display" id="word-display"><span class="word-placeholder">tap letters to spell a word</span></div>
+    <div class="actions">
+      <button class="btn btn-danger" onclick="clearWord()">Clear</button>
+      <button class="btn btn-primary" id="submit-btn" onclick="submitWord()" disabled>Submit Word</button>
+    </div>
+    <div class="feedback info" id="feedback">Pick letters to form a word — longer words earn more cash!</div>
+  </div>
+  <div class="words-list">
+    <h3>Words Found <span id="mult-badge" class="multiplier-badge" style="display:none"></span></h3>
+    <div class="words-found" id="words-found"></div>
+  </div>
+  <div class="leaderboard">
+    <h3>Leaderboard</h3>
+    <div id="leaderboard-list"></div>
+  </div>
+</div>
+
+<div class="overlay" id="start-modal">
+  <div class="modal">
+    <h2>WordsCash 💰</h2>
+    <p>Spell words from the given letters. Longer words earn more cash. 2 minutes per round — 5 rounds total!</p>
+    <input type="text" id="player-name" placeholder="Your name..." maxlength="20"/>
+    <button class="btn btn-primary" style="width:100%" onclick="startGame()">Start Playing</button>
+  </div>
+</div>
+
+<div class="overlay" id="round-end-modal" style="display:none">
+  <div class="modal">
+    <h2 id="round-end-title">Round Complete!</h2>
+    <p id="round-end-sub"></p>
+    <div class="modal-stats">
+      <div class="stat"><div class="stat-val" id="re-words">0</div><div class="stat-label">Words</div></div>
+      <div class="stat"><div class="stat-val" id="re-pts">0</div><div class="stat-label">Points</div></div>
+      <div class="stat"><div class="stat-val" id="re-cash">$0</div><div class="stat-label">Earned</div></div>
+      <div class="stat"><div class="stat-val green" id="re-bonus">x1</div><div class="stat-label">Multiplier</div></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" id="next-btn" onclick="nextRound()">Next Round →</button>
+  </div>
+</div>
+
+<div class="overlay" id="game-end-modal" style="display:none">
+  <div class="modal">
+    <h2>Game Over! 🎉</h2>
+    <p id="game-end-sub"></p>
+    <div class="modal-stats">
+      <div class="stat"><div class="stat-val" id="ge-total-words">0</div><div class="stat-label">Total Words</div></div>
+      <div class="stat"><div class="stat-val" id="ge-total-pts">0</div><div class="stat-label">Total Points</div></div>
+      <div class="stat" style="grid-column:1/-1"><div class="stat-val" id="ge-cash" style="font-size:2rem">$0.00</div><div class="stat-label">Total Cash Earned</div></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-bottom:.5rem" onclick="playAgain()">Play Again</button>
+    <button class="btn btn-secondary" style="width:100%" onclick="shareScore()">Share Score</button>
+  </div>
+</div>
+
+<script>
+const LETTER_VALUES={A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10};
+const ROUND_THEMES=[
+  {name:'Everyday Words',letters:'AEINRST',bonus:null,multiplier:1},
+  {name:'Power Round',letters:'AERINOS',bonus:5,multiplier:1.5},
+  {name:'Long Words Bonus',letters:'AEINRST',bonus:7,multiplier:2},
+  {name:'Double Cash',letters:'AETINOS',bonus:null,multiplier:2},
+  {name:'Grand Finale',letters:'AEINRST',bonus:6,multiplier:3},
+];
+let state={playerName:'',round:1,totalScore:0,totalCash:0,totalWords:0,currentLetters:[],selectedIndices:[],currentWord:'',wordsThisRound:[],roundScore:0,roundCash:0,timerSecs:120,timerInterval:null,gameActive:false,validating:false,leaderboard:[{name:'LexiPro',score:4820,cash:48.20},{name:'WordWitch',score:3910,cash:39.10},{name:'SpellStar',score:2750,cash:27.50}]};
+function generateLetters(theme){const base=theme.letters;const pool=[];for(let c of base)pool.push(c);const extras='AAEINORSTLDC';while(pool.length<12)pool.push(extras[Math.floor(Math.random()*extras.length)]);for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,12);}
+function renderLetters(){const grid=document.getElementById('letters-grid');grid.innerHTML='';state.currentLetters.forEach((l,i)=>{const used=state.selectedIndices.includes(i);const tile=document.createElement('div');tile.className='letter-tile'+(used?' selected':'');tile.innerHTML=l+'<span class="tile-pts">'+LETTER_VALUES[l]+'</span>';tile.onclick=()=>used?null:selectLetter(i);grid.appendChild(tile);});}
+function selectLetter(i){if(state.validating||!state.gameActive)return;if(state.selectedIndices.includes(i)){state.selectedIndices.splice(state.selectedIndices.indexOf(i),1);}else{state.selectedIndices.push(i);}state.currentWord=state.selectedIndices.map(x=>state.currentLetters[x]).join('');renderLetters();renderWordDisplay();document.getElementById('submit-btn').disabled=state.currentWord.length<2;}
+function renderWordDisplay(){const wd=document.getElementById('word-display');if(!state.currentWord){wd.innerHTML='<span class="word-placeholder">tap letters to spell a word</span>';return;}wd.innerHTML=state.currentWord.split('').map(l=>`<div class="word-letter">${l}</div>`).join('');}
+function clearWord(){state.selectedIndices=[];state.currentWord='';renderLetters();renderWordDisplay();document.getElementById('submit-btn').disabled=true;}
+function shuffleLetters(){for(let i=state.currentLetters.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[state.currentLetters[i],state.currentLetters[j]]=[state.currentLetters[j],state.currentLetters[i]];}clearWord();renderLetters();}
+function calcWordScore(word){let pts=0;for(let c of word)pts+=(LETTER_VALUES[c]||1);const len=word.length;if(len>=8)pts*=4;else if(len>=6)pts*=3;else if(len>=5)pts*=2;else if(len>=4)pts*=1.5;pts=Math.round(pts);const theme=ROUND_THEMES[state.round-1];if(theme.bonus&&len>=theme.bonus)pts=Math.round(pts*1.5);return pts;}
+function setFeedback(msg,type){const fb=document.getElementById('feedback');fb.className='feedback '+type;fb.innerHTML=msg;}
+async function submitWord(){if(state.validating||!state.gameActive)return;const word=state.currentWord.toUpperCase();if(word.length<2){setFeedback('Word must be at least 2 letters!','error');return;}if(state.wordsThisRound.find(w=>w.word===word)){setFeedback('Already used that word!','error');clearWord();return;}state.validating=true;document.getElementById('submit-btn').disabled=true;setFeedback('<span>Checking <b>'+word+'</b></span><span class="loading-dots"><span></span><span></span><span></span></span>','info');try{const valid=await validateWord(word);if(valid){const pts=calcWordScore(word);const theme=ROUND_THEMES[state.round-1];const finalPts=Math.round(pts*theme.multiplier);const cash=finalPts*0.01;state.totalScore+=finalPts;state.totalCash+=cash;state.totalWords++;state.roundScore+=finalPts;state.roundCash+=cash;state.wordsThisRound.push({word,pts:finalPts,cash});const isBonus=theme.bonus&&word.length>=theme.bonus;setFeedback('✓ <b>'+word+'</b> — +'+finalPts+' pts (+$'+cash.toFixed(2)+')'+( isBonus?' 🔥 BONUS!':''),'success');renderStats();renderWordsFound();clearWord();}else{setFeedback('✗ <b>'+word+'</b> — not a valid word!','error');clearWord();}}catch(e){const pts=calcWordScore(word);const theme=ROUND_THEMES[state.round-1];const finalPts=Math.round(pts*theme.multiplier);const cash=finalPts*0.01;state.totalScore+=finalPts;state.totalCash+=cash;state.totalWords++;state.roundScore+=finalPts;state.roundCash+=cash;state.wordsThisRound.push({word,pts:finalPts,cash});setFeedback('✓ <b>'+word+'</b> accepted — +'+finalPts+' pts (+$'+cash.toFixed(2)+')','success');renderStats();renderWordsFound();clearWord();}state.validating=false;document.getElementById('submit-btn').disabled=state.currentWord.length<2;}
+async function validateWord(word){const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'You are a word game validator. Respond ONLY with valid JSON: {"valid": true} or {"valid": false}. A word is valid if it is a real English word (not a proper noun, abbreviation, or slang).',messages:[{role:'user',content:'Is "'+word.toLowerCase()+'" a valid English word for a word game? Respond only with JSON.'}]})});const data=await resp.json();const text=data.content.map(c=>c.text||'').join('');const match=text.match(/\{"valid"\s*:\s*(true|false)\}/);return match?match[1]==='true':word.length>=3;}
+function renderStats(){document.getElementById('stat-cash').textContent='$'+state.totalCash.toFixed(2);document.getElementById('stat-score').textContent=state.totalScore;document.getElementById('stat-words').textContent=state.totalWords;}
+function renderWordsFound(){const cont=document.getElementById('words-found');const theme=ROUND_THEMES[state.round-1];cont.innerHTML=state.wordsThisRound.map(w=>{const isBonus=theme.bonus&&w.word.length>=theme.bonus;return'<div class="word-chip '+(isBonus?'bonus':'normal')+'"><span>'+w.word+'</span><span class="chip-pts">+'+w.pts+'</span></div>';}).join('');}
+function renderLeaderboard(){const lb=[...state.leaderboard];if(state.playerName&&state.totalScore>0){const ex=lb.findIndex(x=>x.name===state.playerName);if(ex>=0)lb[ex]={name:state.playerName,score:state.totalScore,cash:state.totalCash};else lb.push({name:state.playerName,score:state.totalScore,cash:state.totalCash});}lb.sort((a,b)=>b.score-a.score);const medals=['🥇','🥈','🥉'];document.getElementById('leaderboard-list').innerHTML=lb.slice(0,5).map((r,i)=>'<div class="lb-row"><div class="lb-rank">'+(medals[i]||'#'+(i+1))+'</div><div class="lb-name">'+r.name+(r.name===state.playerName?'<span style="color:var(--gold);font-size:.7rem;margin-left:6px">YOU</span>':'')+'</div><div class="lb-score">'+r.score+'pts</div><div class="lb-cash">$'+r.cash.toFixed(2)+'</div></div>').join('');}
+function startTimer(){state.timerSecs=120;updateTimerDisplay();state.timerInterval=setInterval(()=>{state.timerSecs--;updateTimerDisplay();if(state.timerSecs<=0){clearInterval(state.timerInterval);endRound();}},1000);}
+function updateTimerDisplay(){const m=Math.floor(state.timerSecs/60);const s=state.timerSecs%60;const el=document.getElementById('timer');el.textContent=m+':'+(s<10?'0':'')+s;el.className='timer'+(state.timerSecs<=20?' urgent':'');}
+function startGame(){const name=document.getElementById('player-name').value.trim();state.playerName=name||'Player';document.getElementById('start-modal').style.display='none';startRound();}
+function startRound(){const theme=ROUND_THEMES[state.round-1];state.currentLetters=generateLetters(theme);state.selectedIndices=[];state.currentWord='';state.wordsThisRound=[];state.roundScore=0;state.roundCash=0;state.gameActive=true;document.getElementById('round-num').textContent=state.round;const mb=document.getElementById('mult-badge');if(theme.multiplier>1){mb.textContent='x'+theme.multiplier+' '+theme.name;mb.style.display='inline-block';}else{mb.style.display='none';}renderLetters();renderWordDisplay();renderWordsFound();setFeedback('Round '+state.round+': '+theme.name+(theme.bonus?' — '+theme.bonus+'+ letter words earn bonus points!':''),'info');clearWord();startTimer();renderLeaderboard();}
+function endRound(){state.gameActive=false;clearInterval(state.timerInterval);const theme=ROUND_THEMES[state.round-1];document.getElementById('round-end-title').textContent='Round '+state.round+' Done!';document.getElementById('round-end-sub').textContent=theme.name;document.getElementById('re-words').textContent=state.wordsThisRound.length;document.getElementById('re-pts').textContent=state.roundScore;document.getElementById('re-cash').textContent='$'+state.roundCash.toFixed(2);document.getElementById('re-bonus').textContent='x'+theme.multiplier;const nb=document.getElementById('next-btn');if(state.round>=5){nb.textContent='See Results';nb.onclick=endGame;}else{nb.textContent='Next Round →';nb.onclick=nextRound;}document.getElementById('round-end-modal').style.display='flex';renderLeaderboard();}
+function nextRound(){document.getElementById('round-end-modal').style.display='none';state.round++;startRound();}
+function endGame(){document.getElementById('round-end-modal').style.display='none';document.getElementById('game-end-sub').textContent='Great game, '+state.playerName+'!';document.getElementById('ge-total-words').textContent=state.totalWords;document.getElementById('ge-total-pts').textContent=state.totalScore;document.getElementById('ge-cash').textContent='$'+state.totalCash.toFixed(2);document.getElementById('game-end-modal').style.display='flex';const ex=state.leaderboard.findIndex(x=>x.name===state.playerName);if(ex>=0)state.leaderboard[ex]={name:state.playerName,score:state.totalScore,cash:state.totalCash};else state.leaderboard.push({name:state.playerName,score:state.totalScore,cash:state.totalCash});renderLeaderboard();}
+function playAgain(){document.getElementById('game-end-modal').style.display='none';state.round=1;state.totalScore=0;state.totalCash=0;state.totalWords=0;renderStats();startRound();}
+function shareScore(){const text='I earned $'+state.totalCash.toFixed(2)+' and '+state.totalScore+' points on WordsCash! Can you beat me?';if(navigator.share){navigator.share({title:'WordsCash',text});}else{navigator.clipboard.writeText(text).then(()=>alert('Score copied to clipboard!'));}}
+document.addEventListener('keydown',e=>{if(!state.gameActive)return;if(e.key==='Enter')submitWord();if(e.key==='Escape'||e.key==='Backspace')clearWord();});
+</script>
+</body>
+</html>
